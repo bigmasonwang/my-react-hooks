@@ -1,8 +1,18 @@
 import React, { useState } from 'react';
 import ReactDOM from 'react-dom/client';
 
+const useMyState = (initialState) => {
+  let state = initialState;
+  const setState = (newState) => {
+    state = newState;
+    console.log(state);
+  };
+
+  return [state, setState];
+};
+
 const App = () => {
-  const [count, setCount] = useState(0);
+  const [count, setCount] = useMyState(0);
   return (
     <div>
       <div>{count}</div>
