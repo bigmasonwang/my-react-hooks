@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
 import ReactDOM from 'react-dom/client';
 
+let _state;
 const useMyState = (initialState) => {
-  let state = initialState;
+  _state = _state || initialState;
+
   const setState = (newState) => {
-    state = newState;
-    console.log(state);
+    _state = newState;
+    renderApp();
   };
 
-  return [state, setState];
+  return [_state, setState];
 };
 
 const App = () => {
