@@ -19,42 +19,80 @@ const useMyState = (initialState) => {
 };
 
 const useMyCallback = (callback, dependencies) => {
-  if (hookStates[hookIndex]) {
-    const [lastCallback, lastDependencies] = hookStates[hookIndex];
-    const isSame = dependencies.every(
-      (dependency, index) => dependency === lastDependencies[index]
-    );
-    if (isSame) {
-      hookIndex++;
-      return lastCallback;
-    }
+  const saveCallBackToHookStates = () => {
     hookStates[hookIndex] = [callback, dependencies];
     hookIndex++;
+  };
+  // first render
+  if (hookStates[hookIndex] === undefined) {
+    saveCallBackToHookStates();
     return callback;
   }
-  // first render
-  hookStates[hookIndex] = [callback, dependencies];
-  hookIndex++;
+  // not first render
+  const [lastCallback, lastDependencies] = hookStates[hookIndex];
+  const isSame = dependencies.every(
+    (dependency, index) => dependency === lastDependencies[index]
+  );
+  // dependencies didn't change
+  if (isSame) {
+    hookIndex++;
+    return lastCallback;
+  }
+  saveCallBackToHookStates();
   return callback;
+};
+
+const useMyMemo = (factory, dependencies) => {
+  const saveMemoToHookStates = () => {
+    hookStates[hookIndex] = [factory(), dependencies];
+    hookIndex++;
+  };
+  // first render
+  if (hookStates[hookIndex] === undefined) {
+    saveMemoToHookStates();
+    return factory();
+  }
+  // not first render
+  const [lastMemo, lastDependencies] = hookStates[hookIndex];
+  const isSame = dependencies.every(
+    (dependency, index) => dependency === lastDependencies[index]
+  );
+  // dependencies didn't change
+  if (isSame) {
+    hookIndex++;
+    return lastMemo;
+  }
+  saveMemoToHookStates();
+  return factory();
 };
 
 const Child = ({ value, onClick }) => {
   console.log('Child component render');
   return <button onClick={onClick}>{value}</button>;
 };
-// will not rerender if props not change
+
+// memo lets you skip re-rendering a component when its props are unchanged.
 const MemorisedChild = memo(Child);
 
 const App = () => {
   const [count, setCount] = useMyState(0);
   const [input, setInput] = useMyState('mason');
 
+  const getSomeValueByCount = (count) => {
+    console.log('heavy calculation');
+    return count;
+  };
+  const memorisedValue = useMyMemo(() => getSomeValueByCount(count), [count]);
+
   const handleButtonClick = () => setCount(count + 1);
+  // Because of my custom useState
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const memorisedHandleClick = useMyCallback(handleButtonClick, [count]);
 
   return (
     <div>
       <div>
-        <MemorisedChild value={count} onClick={handleButtonClick} />
+        <Child value={memorisedValue} onClick={memorisedHandleClick} />
       </div>
       <div>
         <input
