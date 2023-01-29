@@ -70,6 +70,33 @@ const useMyMemo = (factory, dependencies) => {
   return saveMemoToHookStates();
 };
 
+const useMyEffect = (callback, dependencies) => {
+  const saveDependenciesHookStates = () => {
+    hookStates[hookIndex] = [callback, dependencies];
+    hookIndex++;
+  };
+  // first render
+  if (hookStates[hookIndex] === undefined) {
+    // save dependencies
+    saveDependenciesHookStates();
+    callback();
+    return;
+  }
+  // not first render
+  const lastDependencies = hookStates[hookIndex];
+  const isSame = dependencies.every(
+    (dependency, index) => dependency === lastDependencies[index]
+  );
+  // dependencies didn't change
+  if (isSame) {
+    hookIndex++;
+    return;
+  }
+  saveDependenciesHookStates();
+  callback();
+  return callback;
+};
+
 const Child = ({ value, onClick }) => {
   console.log('Child component render');
   return <button onClick={onClick}>{value}</button>;
@@ -81,6 +108,10 @@ const MemorisedChild = memo(Child);
 const App = () => {
   const [count, setCount] = useMyState(0);
   const [input, setInput] = useMyState('mason');
+
+  useMyEffect(() => {
+    document.title = input;
+  }, [input]);
 
   const getSomeValueByCount = (count) => {
     console.log('heavy calculation');
