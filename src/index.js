@@ -1,8 +1,9 @@
-import React, { memo, useCallback, useMemo, useState } from 'react';
+import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import ReactDOM from 'react-dom/client';
 
 const hookStates = [];
 let hookIndex = 0;
+
 const useMyState = (initialState) => {
   const isFirstRender = hookStates[hookIndex] === undefined;
   const state = isFirstRender ? initialState : hookStates[hookIndex];
@@ -44,26 +45,29 @@ const useMyCallback = (callback, dependencies) => {
 
 const useMyMemo = (factory, dependencies) => {
   const saveMemoToHookStates = () => {
-    hookStates[hookIndex] = [factory(), dependencies];
+    const memo = factory();
+    hookStates[hookIndex] = [memo, dependencies];
     hookIndex++;
+    return memo;
   };
+
   // first render
   if (hookStates[hookIndex] === undefined) {
-    saveMemoToHookStates();
-    return factory();
+    return saveMemoToHookStates();
   }
   // not first render
   const [lastMemo, lastDependencies] = hookStates[hookIndex];
   const isSame = dependencies.every(
     (dependency, index) => dependency === lastDependencies[index]
   );
+
   // dependencies didn't change
   if (isSame) {
     hookIndex++;
     return lastMemo;
   }
-  saveMemoToHookStates();
-  return factory();
+
+  return saveMemoToHookStates();
 };
 
 const Child = ({ value, onClick }) => {
@@ -92,7 +96,7 @@ const App = () => {
   return (
     <div>
       <div>
-        <Child value={memorisedValue} onClick={memorisedHandleClick} />
+        <MemorisedChild value={memorisedValue} onClick={memorisedHandleClick} />
       </div>
       <div>
         <input
